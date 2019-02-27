@@ -1,2 +1,6 @@
 cv3
-31
+1-11 (32)
+
+OS::modul::komponent
+OS::Nova::Server -- vytvori virtualnu mašinu
+
