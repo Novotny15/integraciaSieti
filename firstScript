@@ -1,28 +1,54 @@
 heat_template_version: rocky
 
 parameters:
-  flavour:
+  flavor:
     type: string
-    label: Flavour
-   net:
-     type: string
-     label: siet
-     default: ext-net
+    label: Flavor
+    default: nano
+  network:
+    type: string
+    label: Network
+    default: ext-net
+  zone:
+    type: string
+    label: Availability zone
+    default: compute1
+  image:
+    type: string
+    label: Image
+    default: cirros
 
 resources:
-  server:
-    type: OS::Nova::Server
-    properties:
-      name: server1
-      image: { get_param: image}
-      flavour: { get_param: flavour}
-      networks:
-      - networks: {get_param: net}
   server1:
     type: OS::Nova::Server
     properties:
       name: server1
       image: { get_param: image}
-      flavour: { get_param: flavour}
+      flavor: { get_param: flavor}
       networks:
-      - networks: {get_param: net}
+        - network: { get_param: network }
+      availability_zone: { get_param: zone}
+      security_groups:
+        - { get_resource: server_security_group }
+
+  server2:
+    type: OS::Nova::Server
+    properties:
+      name: server2
+      image: { get_param: image}
+      flavor: { get_param: flavor}
+      networks:
+        - network: { get_param: network }
+      availability_zone: { get_param: zone}
+      security_groups:
+        - { get_resource: server_security_group }
+
+  server_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: open_SSH
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
