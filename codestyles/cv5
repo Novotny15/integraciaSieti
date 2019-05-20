@@ -1,0 +1,187 @@
+heat_template_version: rocky
+description: Proxy
+
+parameters:
+  NetName:
+    description: NetName
+    type: string
+    default: network
+
+  RouterName:
+    description: RouterName
+    type: string
+    default: router
+
+  PrivateSubnetCidr:
+    description: PrivateSubnetCidr
+    type: string
+    default: 10.0.0.0/24
+
+
+
+resources:
+  Net:
+    type: OS::Neutron::Net
+    properties:
+       admin_state_up: True
+       name: { get_param: NetName }
+       shared: False
+
+  PrivateSubnet:
+     type: OS::Neutron::Subnet
+     properties:
+        name: subnet
+        cidr: { get_param: PrivateSubnetCidr }
+        dns_nameservers:
+          - 8.8.8.8
+          - 8.8.4.4
+        enable_dhcp: True
+        network: { get_resource: Net }
+
+  Router:
+    type: OS::Neutron::Router
+    properties:
+      admin_state_up: True
+      name: router
+      external_gateway_info: {
+        enable_snat: True,
+        network: ext-net
+      }
+
+  RouterPort:
+     type: OS::Neutron::Port
+     properties:
+       name: RouterPort
+       fixed_ips:
+         - ip_address: 10.0.0.1
+       network: { get_resource: Net }
+
+  RouterInterface1:
+    type: OS::Neutron::RouterInterface
+    properties:
+      router: { get_resource: Router }
+      port: { get_resource: RouterPort }
+
+  JumpFloatingIp:
+    type: OS::Neutron::FloatingIP
+    properties:
+      floating_network: ext-net
+
+  JumpFloatingIpAssociation:
+    type: OS::Neutron::FloatingIPAssociation
+    properties:
+      floatingip_id: { get_resource: JumpFloatingIp }
+      port_id: { get_resource: JumpPort }
+
+  JumpPort:
+    type: OS::Neutron::Port
+    properties:
+      name: JumpPort
+     # fixed_ips:
+     # - subnet: { get_resource: PrivateSubnet }
+      network: { get_resource: Net }
+      security_groups:
+        - { get_resource: Jump_22 }
+        - { get_resource: Jump_ICMP }
+
+  ProxyPort:
+    type: OS::Neutron::Port
+    properties:
+      name: PrxyPort
+      network: { get_resource: Net }
+      security_groups:
+        - { get_resource: Proxy_Sec_Group }
+
+  ApachePort:
+    type: OS::Neutron::Port
+    properties:
+      name: ApachePort
+      network: { get_resource: Net }
+      security_groups:
+        - { get_resource: Apache_Sec_Group }
+
+  Jump:
+    type: OS::Nova::Server
+    properties:
+      name: jump
+      availability_zone: compute1
+      flavor: linux
+      image: ubuntu_server_18.04_amd64_Openstack
+      user_data_update_policy: REPLACE
+      key_name: SSHkluc
+      networks:
+        - port: { get_resource: JumpPort }
+      user_data_format: RAW
+      user_data: |
+        #!/bin/bash
+        apt-get update -y
+
+  Proxy:
+    type: OS::Nova::Server
+    properties:
+      name: proxy
+      availability_zone: compute1
+      flavor: linux
+      image: ubuntu_server_18.04_amd64_Openstack
+      user_data_update_policy: REPLACE
+      key_name: SSHkluc
+      networks:
+        - port: { get_resource: ProxyPort }
+      user_data_format: RAW
+      user_data: |
+        #!/bin/bash
+        apt-get update -y
+
+  Apache:
+    type: OS::Nova::Server
+    properties:
+      name: apache
+      availability_zone: compute1
+      flavor: linux
+      image: ubuntu_server_18.04_amd64_Openstack
+      user_data_update_policy: REPLACE
+      key_name: SSHkluc
+      networks:
+        - port: { get_resource: ApachePort }
+      user_data_format: RAW
+      user_data: |
+        #!/bin/bash
+        apt-get update -y
+
+  Jump_22:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: open_SSH
+      rules:
+        - remote_ip_prefix: 158.193.0.0/16
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+
+  Jump_ICMP:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: open_SSH
+      rules:
+        - remote_ip_prefix: 158.193.0.0/16
+          protocol: ICMP
+
+  Proxy_Sec_Group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: proxy_sec_group
+      rules:
+        - remote_ip_prefix: 10.0.0.0/24
+          protocol: TCP
+          port_range_min: 22
+          port_range_max: 22
+
+  Apache_Sec_Group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: apache_sec_group
+      rules:
+        - remote_ip_prefix: 10.0.0.0/24
+          protocol: TCP
+          port_range_min: 22
+          port_range_max: 22
