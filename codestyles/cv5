@@ -148,6 +148,7 @@ resources:
         #!/bin/bash
         apt-get update -y
 
+
   Jump_22:
     type: OS::Neutron::SecurityGroup
     properties:
