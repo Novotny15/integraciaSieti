@@ -1,0 +1,118 @@
+heat_template_version: rocky
+
+parameters:
+
+  network_is:
+    type: string
+    label: Moja siet
+    default: net-is
+
+  image:
+    type: string
+    label: Image
+    default: cirros
+
+  flavor:
+    type: string
+    label: Flavor
+    default: nano
+
+  availabilityZone:
+    type: string
+    label: Availability zone
+    default: compute1
+
+  PrivateSubnetCidr:
+    type: string
+    label: SubnetIP
+    default: 10.0.0.0/24
+
+  network_ext:
+    type: string
+    label: Network
+    default: ext-net
+
+
+resources:
+
+  Net:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: True
+      name: { get_param: network_is }
+      #shared: False
+
+  PrivateSubnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: Subnet
+      cidr: { get_param: PrivateSubnetCidr }
+      dns_nameservers:
+        - 8.8.8.8
+        - 8.8.4.4
+      enable_dhcp: True
+      network: { get_resource: Net }
+
+  server1:
+    type: OS::Nova::Server
+    properties:
+      name: server1
+      image: { get_param: image }
+      flavor: { get_param: flavor }
+      user_data_update_policy: REPLACE
+      networks:
+        - port: { get_resource: Server1Port }
+        - network: { get_param: network_ext }
+      availability_zone: { get_param: availabilityZone }
+
+
+  Server1Port:
+    type: OS::Neutron::Port
+    properties:
+      name: Server1Port
+      fixed_ips:
+        - ip_address: 10.0.0.55
+      network: { get_resource: Net }
+      security_groups:
+        - { get_resource: server_security_group }
+
+
+  server2:
+    type: OS::Nova::Server
+    properties:
+      name: server2
+      image: { get_param: image}
+      flavor: { get_param: flavor}
+      user_data_update_policy: REPLACE
+      networks:
+        - port: { get_resource: Server2Port }
+      availability_zone: { get_param: availabilityZone }
+
+
+  Server2Port:
+    type: OS::Neutron::Port
+    properties:
+      name: Server2Port
+      fixed_ips:
+        - ip_address: 10.0.0.66
+      network: { get_resource: Net }
+      security_groups:
+        - { get_resource: server_security_group }
+
+  server_security_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: open_SSH
+      rules:
+        - remote_ip_prefix: 0.0.0.0/0
+          protocol: tcp
+          port_range_min: 22
+          port_range_max: 22
+        - remote_ip_prefix: 0.0.0.0/0
+          protocol: icmp
+          ethertype: IPv4
+          direction: egress
+        - remote_ip_prefix: 0.0.0.0/0
+          protocol: icmp
+          ethertype: IPv4
+          direction: ingress
