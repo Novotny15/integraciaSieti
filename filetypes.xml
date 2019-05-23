@@ -4,9 +4,11 @@
     <extensionMap>
       <mapping pattern="cv5" type="YAML" />
       <mapping pattern="secondScript" type="YAML" />
+      <mapping pattern="skuska3" type="YAML" />
       <mapping pattern="skuska2" type="YAML" />
       <mapping pattern="firstScript" type="YAML" />
       <mapping pattern="skuska" type="YAML" />
+      <mapping ext="1" type="YAML" />
     </extensionMap>
   </component>
 </application>
