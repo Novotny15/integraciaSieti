@@ -1,0 +1,78 @@
+heat_template_version: rocky
+
+parameters:
+ NetName:
+  type: string
+  label: Moja siet
+  default: net-is
+ image:
+  type: string
+  label: Image
+  default: cirros
+ flavor:
+  type: string
+  label: Flavor
+  default: nano
+ availabilityZone:
+  type: string
+  label: Availability zone
+  default: compute1
+ PrivateSubnetCidr:
+  type: string
+  label: SubnetIP
+  default: 10.0.0.0/24
+
+resources:
+
+  Net:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: True
+      name: { get_param: NetName }
+      shared: False
+
+  PrivateSubnet:
+    type: OS::Neutron::Subnet
+    properties:
+      name: subnet-is
+      cidr: { get_param: PrivateSubnetCidr }
+      dns_nameservers:
+        - 8.8.8.8
+        - 8.8.4.4
+      enable_dhcp: True
+      network: { get_resource: Net }
+
+  Server1:
+    type: OS::Nova::Server
+    properties:
+      name: server1
+      availability_zone: { get_param: availabilityZone }
+      flavor: { get_param: flavor }
+      image: { get_param: image }
+      user_data_update_policy: REPLACE
+      networks:
+        - network: ext-net
+        - subnet: { get_resource: PrivateSubnet }
+      user_data_format: RAW
+      security_groups: [ get_resource: server_security_group1 ]
+
+  Server2:
+     type: OS::Nova::Server
+     properties:
+       name: server2
+       availability_zone: { get_param: availabilityZone }
+       flavor: { get_param: flavor }
+       image: { get_param: image }
+       user_data_update_policy: REPLACE
+       networks:
+         - subnet: { get_resource: PrivateSubnet }
+       user_data_format: RAW
+       security_groups: [ get_resource: server_security_group1 ]
+
+  server_security_group1:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      name: Security_group1
+      rules:
+        - { remote_ip_prefix: 0.0.0.0/0, direction: ingress, protocol: icmp }
+        - { remote_ip_prefix: 0.0.0.0/0, direction: ingress, protocol: tcp, port_range_min: 22, port_range_max: 22}
