@@ -5,6 +5,7 @@
       <mapping pattern="cv5" type="YAML" />
       <mapping pattern="secondScript" type="YAML" />
       <mapping pattern="firstScript" type="YAML" />
+      <mapping pattern="skuska" type="YAML" />
     </extensionMap>
   </component>
 </application>
