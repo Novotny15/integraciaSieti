@@ -1,0 +1,48 @@
+heat_template_version: rocky
+
+parameters:
+ flavor:
+  type: string
+  label: Flavor
+  default: nano
+ net:
+  type: string
+  label: Network
+  default: ext-net
+ aval_zone:
+  type: string
+  label: Availability zone
+  default: compute1
+ image:
+  type: string
+  label: Image
+  default: cirros
+
+resources:
+ server1:
+  type: OS::Nova::Server
+  properties:
+   name: server1
+   image: { get_param: image }
+   flavor: { get_param: flavor }
+   networks:
+    - network: { get_param: net }
+   availability_zone: { get_param: aval_zone }
+   security_groups: [ get_resource: server_security_group1 ]
+ server2:
+  type: OS::Nova::Server
+  properties:
+   name: server2
+   image: { get_param: image }
+   flavor: { get_param: flavor }
+   networks:
+    - network: { get_param: net }
+   availability_zone: { get_param: aval_zone }
+   security_groups: [ get_resource: server_security_group1 ]
+ server_security_group1:
+  type: OS::Neutron::SecurityGroup
+  properties:
+   name: Security_group1
+   rules:
+    - { remote_ip_prefix: 0.0.0.0/0, direction: ingress, protocol: icmp }
+    - { remote_ip_prefix: 0.0.0.0/0, direction: ingress, protocol: tcp, port_range_min: 22, port_range_max: 22}
