@@ -4,6 +4,7 @@
     <extensionMap>
       <mapping pattern="link" type="PLAIN_TEXT" />
       <mapping pattern="cv5" type="YAML" />
+      <mapping pattern="finalSkuska" type="YAML" />
       <mapping pattern="secondScript" type="YAML" />
       <mapping pattern="skuska3" type="YAML" />
       <mapping pattern="skuska2" type="YAML" />
